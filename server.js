@@ -19,7 +19,7 @@ const db = mysql.createPool({
   user: 'root',
   password: 'Someshwari@24',
   database: 'Customer',
-  port: 3306,
+  port: 3306,  
 });
 
 // Signup API
