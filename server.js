@@ -6,29 +6,20 @@ const validator = require('validator');
 const cors = require('cors');
 
 const app = express();
-const port = 3002;
+const port = 3006;
 
 // Enable CORS for frontend communication
 app.use(cors());
-
-// Middleware
 app.use(bodyParser.json());
 
-// MySQL Database Connection
-const db = mysql.createConnection({
-  host: 'localhost',    // Change if using remote DB
+// MySQL Connection Pool
+const db = mysql.createPool({
+  connectionLimit: 10,
+  host: 'localhost',
   user: 'root',
   password: 'Someshwari@24',
   database: 'Customer',
-  port: 3306,  
-});
-
-db.connect(err => {
-  if (err) {
-    console.error('Database connection failed:', err);
-    return;
-  }
-  console.log('✅ Connected to MySQL database');
+  port: 3306,
 });
 
 // Signup API
@@ -62,7 +53,8 @@ app.post('/signup', async (req, res) => {
       res.status(201).json({ message: 'User registered successfully' });
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error hashing password' });
+    console.error('Error hashing password:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -75,7 +67,7 @@ app.post('/login', (req, res) => {
   }
 
   const sql = 'SELECT * FROM users WHERE email = ?';
-  db.query(sql, [email], async (err, results) => {
+  db.query(sql, [email], (err, results) => {
     if (err) {
       console.error('Database query error:', err);
       return res.status(500).json({ message: 'Server error' });
@@ -86,24 +78,33 @@ app.post('/login', (req, res) => {
     }
 
     const user = results[0];
-    const passwordMatch = await bcrypt.compare(password, user.password);
 
-    if (!passwordMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
+    bcrypt.compare(password, user.password, (err, passwordMatch) => {
+      if (err) {
+        console.error('Bcrypt error:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
 
-    res.status(200).json({ message: 'Login successful' });
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+
+      res.status(200).json({ message: 'Login successful' });
+    });
   });
 });
 
-// Keep MySQL Connection Alive
+// Keep MySQL Connection Alive (For Connection Pool)
 setInterval(() => {
-  db.query('SELECT 1', (err) => {
+  db.getConnection((err, connection) => {
     if (err) {
       console.error('MySQL keep-alive error:', err);
+      return;
     }
+    connection.ping();
+    connection.release();
   });
-}, 30000); // Run query every 30 seconds to keep connection alive
+}, 30000);
 
 // Start Server
 app.listen(port, () => {
