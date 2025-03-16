@@ -1,7 +1,7 @@
 {
   "name": "project",
   "version": "1.0.0",
-  "main": "script.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -14,9 +14,9 @@
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/sahini346/PROJECT/issues"
+    "url": "https://github.com/someshwari24/PROJECT/issues"
   },
-  "homepage": "https://github.com/sahini346/PROJECT#readme",
+  "homepage": "https://github.com/someshwari24/PROJECT",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
