@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #a0d2eb;
+            color: #333;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: #5c6bc0;
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0px;
+            height: 40px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .nav-links a:hover {
+            background-color: #a0d2eb;
+        }
+
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items:center;
+            height: 100vh;
+        }
+
+        .login-form {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #5c6bc0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #3f51b5;
+        }
+
+        #error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Adds spacing between fields */
+}
+
+label {
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <img src="hakunalogo.jpg" alt="Hakuna Logo">
+            <div class="nav-links">
+                <a href="home.html">Home</a>
+                <a href="about.html">About</a>
+                <a href="contact us.html">Contact Us</a>
+                <a href="login.html">Login</a>
+                <a href="sign up.html">Sign up</a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="login-container">
+        <h2>Create an Account</h2>
+        <form id="signupForm">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <label for="confirmPassword">Confirm Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required>
+
+            <button type="submit">Sign Up</button>
+        </form>
+        <p id="error-message"></p>
+    </div>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorMessage = document.getElementById('error-message');
+
+            errorMessage.textContent = '';
+
+            if (!username || !email || !password || !confirmPassword) {
+                errorMessage.textContent = "All fields are required.";
+                return;
+            }
+
+            if (password.length !== 8 || !/\d/.test(password) || !/[!@#$%^&*]/.test(password)) {
+                errorMessage.textContent = "Password must be 8 characters long and include a number and special character.";
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = "Passwords do not match.";
+                return;
+            }
+
+            fetch('http://localhost:3000/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    errorMessage.textContent = data.error;
+                } else {
+                    alert("User registered successfully!");
+                    window.location.href = 'login.html';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorMessage.textContent = "Failed to connect to the server.";
+            });
+        });
+    </script>
+</body>
+</html>

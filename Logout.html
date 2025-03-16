@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging Out...</title>
+    <style>
+        /* Styling for logout page */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7fa;
+        }
+
+        .logout-container {
+            margin-top: 100px;
+        }
+
+        .message {
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .redirecting {
+            font-size: 1em;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logout-container">
+        <p class="message">You are being logged out...</p>
+        <p class="redirecting">Redirecting to login page...</p>
+    </div>
+
+    <script>
+        // Clear user session or local storage
+        localStorage.removeItem('username');  // Remove stored username
+        sessionStorage.clear();  // Clear session storage (if used)
+
+        // Redirect to login page after 3 seconds
+        setTimeout(function() {
+            window.location.href = "login.html";  // Change this to your actual login page
+        }, 3000);
+    </script>
+
+</body>
+</html>

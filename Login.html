@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #a0d2eb;
+            color: #333;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: #5c6bc0;
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0px;
+            height: 40px;
+        }
+
+        .nav-links {
+            display: inline;
+            gap: 20px;
+            font-size: 14px;
+            color: white;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .nav-links a:hover {
+            background-color: #dddee5de;
+        }
+
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+            position: relative;
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #555;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #5c6bc0;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #a0d2eb;
+        }
+
+        p {
+            margin-top: 15px;
+            color: #555;
+        }
+
+        a {
+            color: #5c6bc0;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .success-message {
+            color: green;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <img src="hakunalogo.jpg" alt="Hakuna Logo">
+            <div class="nav-links">
+                <a href="home.html">Home</a>
+                <a href="about.html">About</a>
+                <a href="Contact us.html">Contact Us</a>
+                <a href="login.html">Login</a>
+                <a href="sign up.html">Sign up</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="login-wrapper">
+        <div class="login-container">
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                    <div id="email-error" class="error-message">Please enter a valid email address.</div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required minlength="8">
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">👁</button>
+                    <div id="password-error" class="error-message">Password must be at least 8 characters long.</div>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <p>Don't have an account? <a href="sign up.html">Sign up</a></p>
+            <div id="login-message" class="success-message"></div>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+        }
+
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form submission
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            fetch('http://localhost:3000/login', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }) // Send email & password to backend
+            })
+            .then(response => response.json())
+            .then(data => {
+                const loginMessage = document.getElementById('login-message');
+
+                if (data.message === "Login successful") {
+                    loginMessage.textContent = "Login successful! Redirecting...";
+                    loginMessage.style.color = "green";
+
+                    // Redirect user after login
+                    setTimeout(() => {
+                        window.location.href = "User Dashboard.html";
+                    }, 2000);
+                } else {
+                    loginMessage.textContent = data.message; // Display error message from backend
+                    loginMessage.style.color = "red";
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        });
+    </script>
+</body>
+</html>
