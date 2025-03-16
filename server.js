@@ -1,25 +1,33 @@
 const express = require('express');
 const mysql = require('mysql2');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser');
 const validator = require('validator');
 const cors = require('cors');
 
 const app = express();
-const port = 3006;
+const port = 3000;
 
 // Enable CORS for frontend communication
 app.use(cors());
+
+// Middleware
 app.use(bodyParser.json());
 
-// MySQL Connection Pool
-const db = mysql.createPool({
-  connectionLimit: 10,
+// MySQL Database Connection
+const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: 'Someshwari@24',
-  database: 'Customer',
-  port: 3306,  
+  database: 'Customer'
+});
+
+db.connect(err => {
+  if (err) {
+    console.error('Database connection failed:', err);
+    return;
+  }
+  console.log('✅ Connected to MySQL database');
 });
 
 // Signup API
@@ -53,8 +61,7 @@ app.post('/signup', async (req, res) => {
       res.status(201).json({ message: 'User registered successfully' });
     });
   } catch (error) {
-    console.error('Error hashing password:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Error hashing password' });
   }
 });
 
@@ -67,7 +74,7 @@ app.post('/login', (req, res) => {
   }
 
   const sql = 'SELECT * FROM users WHERE email = ?';
-  db.query(sql, [email], (err, results) => {
+  db.query(sql, [email], async (err, results) => {
     if (err) {
       console.error('Database query error:', err);
       return res.status(500).json({ message: 'Server error' });
@@ -78,33 +85,24 @@ app.post('/login', (req, res) => {
     }
 
     const user = results[0];
+    const passwordMatch = await bcrypt.compare(password, user.password);
 
-    bcrypt.compare(password, user.password, (err, passwordMatch) => {
-      if (err) {
-        console.error('Bcrypt error:', err);
-        return res.status(500).json({ message: 'Server error' });
-      }
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
 
-      if (!passwordMatch) {
-        return res.status(401).json({ message: 'Invalid email or password' });
-      }
-
-      res.status(200).json({ message: 'Login successful' });
-    });
+    res.status(200).json({ message: 'Login successful' });
   });
 });
 
-// Keep MySQL Connection Alive (For Connection Pool)
+// Keep MySQL Connection Alive
 setInterval(() => {
-  db.getConnection((err, connection) => {
+  db.query('SELECT 1', (err) => {
     if (err) {
       console.error('MySQL keep-alive error:', err);
-      return;
     }
-    connection.ping();
-    connection.release();
   });
-}, 30000);
+}, 30000); // Run query every 30 seconds to keep connection alive
 
 // Start Server
 app.listen(port, () => {
