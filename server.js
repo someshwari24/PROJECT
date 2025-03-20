@@ -14,9 +14,10 @@ const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // MongoDB Connection
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGO_URI)
     .then(() => console.log("MongoDB Connected"))
     .catch(err => console.error("MongoDB Connection Error:", err));
+
 
 // User Schema & Model
 const userSchema = new mongoose.Schema({
