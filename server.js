@@ -1,110 +1,81 @@
+require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2');
-const bcrypt = require('bcrypt');
-const bodyParser = require('body-parser');
-const validator = require('validator');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const cors = require('cors');
 
 const app = express();
-const port = 3000;
-
-// Enable CORS for frontend communication
+app.use(express.json());
 app.use(cors());
 
-// Middleware
-app.use(bodyParser.json());
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// MySQL Database Connection
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'Someshwari@24',
-  database: 'Customer'
+// MongoDB Connection
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.error("MongoDB Connection Error:", err));
+
+// User Schema & Model
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true }
 });
 
-db.connect(err => {
-  if (err) {
-    console.error('Database connection failed:', err);
-    return;
-  }
-  console.log('✅ Connected to MySQL database');
-});
+const User = mongoose.model('User', userSchema);
 
-// Signup API
+// Signup Route
 app.post('/signup', async (req, res) => {
-  const { username, email, password } = req.body;
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
 
-  if (!username || !email || !password) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
-
-  if (!validator.isEmail(email)) {
-    return res.status(400).json({ message: 'Invalid email format' });
-  }
-
-  if (password.length < 8) {
-    return res.status(400).json({ message: 'Password must be at least 8 characters long' });
-  }
-
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-
-    db.query(sql, [username, email, hashedPassword], (err, result) => {
-      if (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(400).json({ message: 'Email already exists' });
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email already in use' });
         }
-        console.error('Error inserting user:', err);
-        return res.status(500).json({ message: 'Server error' });
-      }
-      res.status(201).json({ message: 'User registered successfully' });
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error hashing password' });
-  }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, email, password: hashedPassword });
+        await newUser.save();
+
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (err) {
+        console.error('Signup error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
-// Login API
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
-  }
-
-  const sql = 'SELECT * FROM users WHERE email = ?';
-  db.query(sql, [email], async (err, results) => {
-    if (err) {
-      console.error('Database query error:', err);
-      return res.status(500).json({ message: 'Server error' });
+// Login Route
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    if (results.length === 0) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+        res.status(200).json({ message: 'Login successful', token });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ message: 'Server error' });
     }
-
-    const user = results[0];
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    res.status(200).json({ message: 'Login successful' });
-  });
 });
-
-// Keep MySQL Connection Alive
-setInterval(() => {
-  db.query('SELECT 1', (err) => {
-    if (err) {
-      console.error('MySQL keep-alive error:', err);
-    }
-  });
-}, 30000); // Run query every 30 seconds to keep connection alive
 
 // Start Server
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
