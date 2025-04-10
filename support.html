@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Support</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Raleway', sans-serif;
+    }
+
+    body {
+      background-color: #a0d2eb;
+      color: #333;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background-color: #5c6bc0;
+      padding: 15px 0;
+      color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0px;
+      height: 40px;
+    }
+
+    .nav-links {
+      display: inline;
+      gap: 20px;
+      font-size: 14px;
+      color: white;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    .nav-links a:hover {
+      background-color: #a0d2eb;
+    }
+
+    .notice-bar {
+      
+      color: rgb(231, 65, 73);
+      text-align: center;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 14px;
+      border-radius: 4px;
+      max-width: 800px;
+      margin: 30px auto 20px;
+    }
+
+    main {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #3f4d8b;
+    }
+
+    .faq-item {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .faq-question {
+      padding: 20px;
+      font-weight: bold;
+      background: #eee;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .faq-question::after {
+      content: '+';
+      position: absolute;
+      right: 20px;
+      font-size: 20px;
+    }
+
+    .faq-answer {
+      padding: 20px;
+      display: none;
+      border-top: 1px solid #ccc;
+    }
+
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+
+    .faq-item.active .faq-question::after {
+      content: '-';
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-container">
+      <img src="hakunalogo.jpg" alt="Hakuna Logo">
+      <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="support.html">Support</a>
+        <a href="login.html">Login</a>
+        <a href="sign up.html">Sign up</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notice Bar placed BELOW header -->
+  <div class="notice-bar">
+    🚫 Please note: We follow a strict NO RETURN policy.
+  </div>
+
+  <main>
+    <h1>Frequently Asked Questions</h1>
+
+    <div class="faq-item">
+      <div class="faq-question">How do I sign up?</div>
+      <div class="faq-answer">Click on the "Sign Up" link in the navigation and fill in your details to create an account.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">How do I submit my shopping details?</div>
+      <div class="faq-answer">After logging in, you'll see a form where you can submit your address and shopping details.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">How do I get matched with an assistant?</div>
+      <div class="faq-answer">Once your details are submitted, the system will assign an assistant and open a WhatsApp link for you to connect.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Can I update my address after submission?</div>
+      <div class="faq-answer">Yes, go to your dashboard and update the address before connecting with an assistant.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Is my personal data safe?</div>
+      <div class="faq-answer">Absolutely. We use secure encryption and do not share your data with third parties.</div>
+    </div>
+  </main>
+
+  <script>
+    const faqs = document.querySelectorAll('.faq-item');
+    faqs.forEach(faq => {
+      faq.querySelector('.faq-question').addEventListener('click', () => {
+        faq.classList.toggle('active');
+      });
+    });
+  </script>
+
+</body>
+</html>

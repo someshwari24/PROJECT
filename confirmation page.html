@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Confirm Delivery</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7fa;
+    }
+    header {
+      background-color: #5c6bc0;
+      padding: 15px 0;
+      color: white;
+      text-align: center;
+    }
+    .dashboard-container {
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .button {
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 10px;
+    }
+    .confirm-btn {
+      background-color: #28a745;
+    }
+    .confirm-btn:hover {
+      background-color: #218838;
+    }
+    .not-received-btn {
+      background-color: #dc3545;
+    }
+    .not-received-btn:hover {
+      background-color: #c82333;
+    }
+    .logout-btn {
+      background: red;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Confirm Delivery</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+  <div class="dashboard-container">
+    <p class="welcome-message">Hi <span id="username">User</span>,</p>
+    <p>If you've received your product, please confirm below.</p>
+
+    <button class="button confirm-btn" onclick="submitDelivery(true)">Yes, I’ve received my product</button>
+    <button class="button not-received-btn" onclick="submitDelivery(false)">No, I haven’t received it</button>
+  </div>
+
+  <script>
+    async function fetchUserInfo() {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("No token found. Please login again.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:3000/me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Unauthorized");
+
+        const data = await res.json();
+        document.getElementById("username").textContent = data.name || "User";
+      } catch (err) {
+        console.error("Error fetching user info:", err);
+        alert("Session expired. Please login again.");
+        localStorage.clear();
+        window.location.href = "login.html";
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    async function submitDelivery(confirmed) {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Please log in again.");
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:3000/confirm-delivery", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ confirmed })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          document.querySelector('.dashboard-container').innerHTML = `
+            <h2>Thank you!</h2>
+            <p>Your response has been recorded.</p>
+          `;
+        } else {
+          alert(data.message || "Something went wrong.");
+        }
+      } catch (err) {
+        console.error("Error confirming delivery:", err);
+        alert("Failed to confirm. Try again later.");
+      }
+    }
+
+    // On page load
+    fetchUserInfo();
+  </script>
+
+</body>
+</html>

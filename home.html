@@ -10,12 +10,49 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Raleway', sans-serif;
         }
+
+    /* Welcome screen */
+    #welcomeScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #a0d2eb;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeOut 1s ease-in-out 9s forwards;
+    }
+
+    .welcome-text {
+      font-size: 2.5rem;
+      color: hsl(324, 74%, 55%);
+      font-weight: bold;
+      text-align: center;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
 
 .slides {
     padding: 0;
@@ -253,6 +290,9 @@ video {
 </head>
 
 <body>
+  <div id="welcomeScreen">
+    <div class="welcome-text">Welcome to Hakuna Express</div>
+  </div>
   
     <marquee>
         <h1 style="color: #5c6bc0">NOW WE ARE LIVE START SHOPPING FROM <b style="color: green;" >WHATSAPP</b></h1>
@@ -264,10 +304,9 @@ video {
             <div class="nav-links">
                 <a href="home.html">Home</a>
                 <a href="about.html">About</a>
-                <a href="contact us.html">Contact Us</a>
+                <a href="support.html">Support</a>
                 <a href="login.html">Login</a>
                 <a href="sign up.html">Sign up</a>
-
             </div>
         </div>
 
@@ -368,14 +407,13 @@ function myFunction() {
   }
   document.getElementById("demo").innerHTML = text;
 }
+setTimeout(() => {
+      const welcomeScreen = document.getElementById("welcomeScreen");
+      if (welcomeScreen) welcomeScreen.remove();
+    }, 1000);
 </script>
     <br>
     <br>    
-         
-         <footer>
-            <p>&copy; 2025 HAKUNA EXPRESS. All rights reserved.</p>
-            <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
-        </footer>
 
 </body>
 

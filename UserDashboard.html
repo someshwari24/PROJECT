@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7fa;
+    }
+    header {
+      background-color: #5c6bc0;
+      padding: 15px 0;
+      color: white;
+      text-align: center;
+    }
+    .dashboard-container {
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .form-group input, 
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .button {
+      background-color: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    .button:hover {
+      background-color: #218838;
+    }
+    .logout-btn {
+      background: red;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>User Dashboard</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+  <div class="dashboard-container">
+    <p class="welcome-message">Welcome, <span id="username">User</span>!</p>
+    <p>Enter your details to book a video shopping assistant.</p>
+
+    <div class="form-group">
+      <label for="name">Full Name:</label>
+      <input type="text" id="name" placeholder="Enter your name" required />
+    </div>
+
+    <div class="form-group">
+      <label for="address">Address:</label>
+      <input type="text" id="address" placeholder="Enter your address" required />
+    </div>
+
+    <div class="form-group">
+      <label for="city">City:</label>
+      <input type="text" id="city" placeholder="Enter city" required />
+    </div>
+
+    <div class="form-group">
+      <label for="state">State:</label>
+      <input type="text" id="state" placeholder="Enter state" required />
+    </div>
+
+    <div class="form-group">
+      <label for="pincode">Pincode:</label>
+      <input type="text" id="pincode" placeholder="Enter pincode" required />
+    </div>
+
+    <div class="form-group">
+      <label for="shopping-date">Date of Shopping:</label>
+      <input type="date" id="shopping-date" required />
+    </div>
+
+    <div class="form-group">
+      <label for="shopping-time">Time of Shopping:</label>
+      <input type="time" id="shopping-time" required />
+    </div>
+
+    <div class="form-group">
+      <label for="mobile">Mobile Number:</label>
+      <input type="tel" id="mobile" placeholder="Enter your mobile number" required />
+    </div>
+
+    <div class="form-group">
+      <label for="item">Item you want to shop:</label>
+      <input type="text" id="item" placeholder="Enter item details" required />
+    </div>
+
+    <div class="form-group">
+      <label for="language">Preferred Language:</label>
+      <select id="language" required>
+        <option value="English">English</option>
+        <option value="Hindi">Hindi</option>
+        <option value="Spanish">Spanish</option>
+      </select>
+    </div>
+
+    <button class="button" id="submit-btn" onclick="submitDetails()">Submit</button>
+  </div>
+
+  <script>
+    async function fetchUserInfo() {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("No token found. Please login again.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:3000/me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Unauthorized");
+
+        const data = await res.json();
+        document.getElementById("username").textContent = data.name || "User";
+        document.getElementById("name").value = data.name || "";
+      } catch (err) {
+        console.error("Error fetching user info:", err);
+        alert("Session expired. Please login again.");
+        localStorage.clear();
+        window.location.href = "login.html";
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    async function submitDetails() {
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+
+      const name = document.getElementById("name").value.trim();
+      const address = document.getElementById("address").value.trim();
+      const city = document.getElementById("city").value.trim();
+      const state = document.getElementById("state").value.trim();
+      const pincode = document.getElementById("pincode").value.trim();
+      const date = document.getElementById("shopping-date").value;
+      const time = document.getElementById("shopping-time").value;
+      const mobile = document.getElementById("mobile").value.trim();
+      const item = document.getElementById("item").value.trim();
+      const language = document.getElementById("language").value;
+      const token = localStorage.getItem("token");
+
+      if (!name || !address || !city || !state || !pincode || !date || !time || !mobile || !item || !language) {
+        alert("Please fill in all fields.");
+        submitBtn.disabled = false;
+        return;
+      }
+
+      if (!token) {
+        alert("You are not authenticated. Please login again.");
+        submitBtn.disabled = false;
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:3000/submit-details", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ name, address, city, state, pincode, date, time, mobile, item, language }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert("Error: " + (errorData.message || "Something went wrong."));
+          submitBtn.disabled = false;
+          return;
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        if (data.whatsappLink && data.assistantName && data.assistantPhone) {
+          alert(`🎉 Assistant: ${data.assistantName}\nPhone: ${data.assistantPhone}`);
+          alert(`WhatsApp Link: ${data.whatsappLink}`);
+          window.open(data.whatsappLink, "_blank");
+        } else if (data.error) {
+          alert("⚠️ " + data.error + "\nCheck your city and try again.");
+        } else {
+          alert("⚠️ No assistant available for your location.");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Something went wrong. Please try again.");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    // Load user info on page load
+    fetchUserInfo();
+  </script>
+
+</body>
+</html>
