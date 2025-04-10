@@ -15,8 +15,13 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // MongoDB Connection
 mongoose.connect(MONGO_URI)
+<<<<<<< HEAD
     .then(() => console.log("✅ MongoDB Connected"))
     .catch(err => console.error("❌ MongoDB Connection Error:", err));
+=======
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.error("MongoDB Connection Error:", err));
+>>>>>>> 67d8ba439df76c09d91b89266645118a132b9af5
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -270,4 +275,8 @@ async function getAssistantDetails(city, state) {
 
 
 // Start Server
+<<<<<<< HEAD
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+=======
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+>>>>>>> 67d8ba439df76c09d91b89266645118a132b9af5
