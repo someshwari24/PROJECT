@@ -15,8 +15,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // MongoDB Connection
 mongoose.connect(MONGO_URI)
-.then(() => console.log("✅ MongoDB Connected"))
-.catch(err => console.error("❌ MongoDB Connection Error:", err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -261,6 +261,23 @@ async function getAssistantDetails(city, state) {
     return { name: 'Error', phonenumber: '0000000000' };
   }
 }
+
+// Root route to handle base URL
+app.get("/", (req, res) => {
+  res.send(`
+    <h1>🚀 Welcome to the API</h1>
+    <p>The server is running and MongoDB is connected.</p>
+    <p>Here are some available routes:</p>
+    <ul>
+      <li>POST /signup</li>
+      <li>POST /login</li>
+      <li>GET /me</li>
+      <li>GET /get-user-address</li>
+      <li>POST /submit-details</li>
+      <li>POST /confirm-delivery</li>
+    </ul>
+  `);
+});
 
 // Start Server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
