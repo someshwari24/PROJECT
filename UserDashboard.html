@@ -56,6 +56,13 @@
     .button:hover {
       background-color: #218838;
     }
+    .cancel-btn {
+      background-color: #dc3545;
+      margin-left: 10px;
+    }
+    .cancel-btn:hover {
+      background-color: #c82333;
+    }
     .logout-btn {
       background: red;
       color: white;
@@ -135,6 +142,7 @@
     </div>
 
     <button class="button" id="submit-btn" onclick="submitDetails()">Submit</button>
+    <button class="button cancel-btn" onclick="cancelForm()">Cancel</button>
   </div>
 
   <script>
@@ -235,6 +243,14 @@
         alert("Something went wrong. Please try again.");
       } finally {
         submitBtn.disabled = false;
+      }
+    }
+
+    function cancelForm() {
+      if (confirm("Are you sure you want to cancel? All entered data will be cleared.")) {
+        document.querySelectorAll('.dashboard-container input, .dashboard-container select').forEach(el => {
+          el.value = '';
+        });
       }
     }
 
