@@ -45,6 +45,15 @@ const addressSchema = new mongoose.Schema({
 
 const Address = mongoose.model('Address', addressSchema);
 
+// Complaint Schema
+const complaintSchema = new mongoose.Schema({
+  assistantNumber: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // optional
+  submittedAt: { type: Date, default: Date.now }
+}, { collection: 'complaints' });
+
+const Complaint = mongoose.model('Complaint', complaintSchema);
+
 // Assistant Schema
 const assistantSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -58,13 +67,21 @@ const Assistant = mongoose.model('Assistant', assistantSchema);
 // Delivery Confirmation Schema
 const confirmationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  status: { type: String, enum: ['received', 'not_received'], required: true },
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Address', required: true },
+  status: { type: String, enum: ['received', 'not_received', 'problem_with_assistant'], required: true },
   confirmedAt: { type: Date, default: Date.now }
 }, { collection: 'confirmations' });
 
 const Confirmation = mongoose.model('Confirmation', confirmationSchema);
+const orderUpdateSchema = new mongoose.Schema({
+  assistantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Assistant', required: true },
+  orderId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Address',   required: true },
+  status:      { type: String, enum: ['packed','shipped','in_transit','delivered','returned'], required: true },
+  updatedAt:   { type: Date, default: Date.now }
+}, { collection: 'orderUpdates' });
+const OrderUpdate = mongoose.model('OrderUpdate', orderUpdateSchema);
 
-// Middleware for Authentication
+
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -74,6 +91,7 @@ const authMiddleware = (req, res, next) => {
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: "Invalid token" });
     req.user = user;
+    req.user.userId = user.userId || user.id; // Handle both user and assistant
     next();
   });
 };
@@ -108,14 +126,15 @@ app.post('/login', async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Invalid email or password' });
+    if (!user) return res.status(401).json({ message: 'Invalid login credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
+    if (!isMatch) return res.status(401).json({ message: 'Invalid login credentials' });
 
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    // Include name in the JWT token
+    const token = jwt.sign({ userId: user._id, name: user.name }, JWT_SECRET, { expiresIn: '1h' });
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Login successful',
       token,
       username: user.username,
@@ -125,48 +144,103 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+app.post('/assistant_update', authMiddleware, async (req, res) => {
+  const { orderId, status } = req.body;
+  const allowed = ['packed','shipped','Out for Delivery','delivered','returned','Cancelled'];
+  if (!orderId || !status || !allowed.includes(status))
+    return res.status(400).json({ message: 'Invalid status or missing orderId' });
 
-// Get User Address Route
-app.get('/get-user-address', authMiddleware, async (req, res) => {
   try {
-    const address = await Address.findOne({ userId: req.user.userId }).sort({ _id: -1 });
-    if (!address) return res.status(404).json({ message: 'No address found' });
+    const order = await Address.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    await new OrderUpdate({
+      assistantId: req.user.userId,
+      orderId,
+      status
+    }).save();
+
+
+    res.json({ message: `Order status updated to ${status.replace('_',' ')}` });
+  } catch {
+    res.status(500).json({ message: 'Error updating order status' });
+  }
+});
+// Get Order Tracking Status
+app.get('/track-order/:orderId', authMiddleware, async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    // Find the order updates for the provided orderId
+    const updates = await OrderUpdate.find({ orderId })
+      .populate('assistantId', 'name phonenumber')  // Populate assistant details
+      .sort({ updatedAt: -1 });  // Sort by most recent update
+
+    if (!updates.length) {
+      return res.status(404).json({ message: 'No tracking information found for this order.' });
+    }
+
+    // Extract the latest order status
+    const latestUpdate = updates[0];
 
     res.json({
-      address: address.address,
-      city: address.city,
-      state: address.state,
-      pincode: address.pincode,
-      mobile: address.mobile
+      orderId,
+      status: latestUpdate.status,
+      assistant: latestUpdate.assistantId ? latestUpdate.assistantId.name : 'Unknown Assistant',
+      updatedAt: latestUpdate.updatedAt,
     });
-  } catch (error) {
-    console.error("❌ Error fetching address:", error);
+  } catch (err) {
+    console.error('Error fetching order tracking status:', err);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+});
+
+
+// Get All Addresses with Delivery Status
+app.get("/get-user-address", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Get all addresses for the user
+    const addresses = await Address.find({ userId });
+
+    // Get all confirmations for the user
+    const confirmations = await Confirmation.find({ userId });
+
+    // Map through addresses and attach status (if any)
+    const userOrdersWithStatus = addresses.map(order => {
+      const matchedConfirmation = confirmations.find(c =>
+        c.orderId?.toString() === order._id?.toString()
+      );
+
+      return {
+        ...order.toObject(),
+        status: matchedConfirmation ? matchedConfirmation.status : 'pending'
+      };
+    });
+
+    res.json(userOrdersWithStatus);
+  } catch (err) {
+    console.error("❌ Error fetching addresses:", err);
+    res.status(500).json({ message: "Failed to fetch addresses." });
+  }
+});
+
+// Get User Details
+app.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId)
+      .select("name username email");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ name: user.name, username: user.username });
+  } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// GET /me
-app.get('/me', (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "No token provided" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    User.findById(decoded.userId)
-      .select("name username email")
-      .then(user => {
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.json({ name: user.name, username: user.username });
-      });
-  } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
-  }
-});
-
-// Address Submission & Assistant Retrieval
+// Submit Address & Get Assistant
 app.post('/submit-details', authMiddleware, async (req, res) => {
   const { name, address, city, state, pincode, mobile, item, language, date, time } = req.body;
 
@@ -197,7 +271,7 @@ app.post('/submit-details', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'No assistant available for your location' });
     }
 
-    const message = `Hello%20I%20need%20help%20shopping%20for%20${encodeURIComponent(item)}.%20My%20name%20is%20${encodeURIComponent(name)}.%20I%20am%20shopping%20on%20${encodeURIComponent(date)}%20at%20${encodeURIComponent(time)}.`;
+    const message = `Hello I need help shopping for ${encodeURIComponent(item)}. My name is ${encodeURIComponent(name)}. I am shopping on ${encodeURIComponent(date)} at ${encodeURIComponent(time)}.`;
     const whatsappLink = `https://wa.me/${assistantPhone}?text=${message}`;
 
     res.json({
@@ -212,31 +286,29 @@ app.post('/submit-details', authMiddleware, async (req, res) => {
   }
 });
 
-// Delivery Confirmation
+// Confirm Delivery Status
 app.post('/confirm-delivery', authMiddleware, async (req, res) => {
-  const { confirmed } = req.body;
+  const { orderId, status } = req.body;
 
-  let status;
-  if (confirmed === true) status = 'received';
-  else if (confirmed === false) status = 'not_received';
-  else return res.status(400).json({ message: 'Invalid status' });
+  if (!orderId || !status || !['received', 'not_received', 'problem_with_assistant'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status or missing orderId' });
+  }
 
   try {
-    const confirmation = new Confirmation({
-      userId: req.user.userId,
-      status
-    });
+    const confirmation = await Confirmation.findOneAndUpdate(
+      { userId: req.user.userId, orderId: orderId },
+      { status },
+      { new: true, upsert: true }
+    );
 
-    await confirmation.save();
-
-    res.status(200).json({ message: `Delivery ${status.replace('_', ' ')} successfully` });
+    res.status(200).json({ message: `Delivery status updated to ${status.replace('_', ' ')}` });
   } catch (error) {
     console.error("❌ Error saving confirmation:", error);
     res.status(500).json({ message: 'Server error while saving confirmation' });
   }
 });
 
-// Helper: Get Assistant Details
+// Get Assistant Details
 async function getAssistantDetails(city, state) {
   try {
     if (!city || !state) {
@@ -251,33 +323,78 @@ async function getAssistantDetails(city, state) {
       state: { $regex: new RegExp(`^${trimmedState}$`, 'i') }
     });
 
-    if (!assistant) {
-      return { name: 'No Assistant Available', phonenumber: '0000000000' };
-    }
-
-    return assistant;
+    return assistant || { name: 'No Assistant Available', phonenumber: '0000000000' };
   } catch (error) {
     console.error("❌ Error fetching assistant:", error);
     return { name: 'Error', phonenumber: '0000000000' };
   }
 }
 
-// Root route to handle base URL
-app.get("/", (req, res) => {
-  res.send(`
-    <h1>🚀 Welcome to the API</h1>
-    <p>The server is running and MongoDB is connected.</p>
-    <p>Here are some available routes:</p>
-    <ul>
-      <li>POST /signup</li>
-      <li>POST /login</li>
-      <li>GET /me</li>
-      <li>GET /get-user-address</li>
-      <li>POST /submit-details</li>
-      <li>POST /confirm-delivery</li>
-    </ul>
-  `);
+// Submit Assistant Complaint
+app.post('/submit-assistant-info', authMiddleware, async (req, res) => {
+  let { assistantNumber } = req.body;
+
+  if (!assistantNumber) {
+    return res.status(400).json({ message: "Assistant number is required." });
+  }
+
+  assistantNumber = assistantNumber.replace(/[^\d]/g, ''); // normalize input
+
+  try {
+    const existingComplaint = await Complaint.findOne({ assistantNumber, userId: req.user.userId });
+
+    if (existingComplaint) {
+      return res.status(400).json({ message: "You already reported this assistant." });
+    }
+
+    const newComplaint = new Complaint({
+      assistantNumber,
+      userId: req.user.userId
+    });
+
+    await newComplaint.save();
+
+    res.status(200).json({ message: "We will contact you shortly." });
+  } catch (error) {
+    console.error("❌ Error submitting complaint:", error);
+    res.status(500).json({ message: "An error occurred while submitting the complaint." });
+  }
 });
+// POST request to login assistant by phone number
+app.post('/assistant-login', async (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ message: 'Phone number is required' });
+  }
+
+  // Optionally, add phone number validation here (example, to check length or format)
+  if (phone.length !== 10 || !/^\d+$/.test(phone)) {
+    return res.status(400).json({ message: 'Invalid phone number format' });
+  }
+
+  try {
+    // Find the assistant by phone number
+    const assistant = await Assistant.findOne({ phonenumber: phone });
+
+    if (!assistant) {
+      return res.status(404).json({ message: 'Assistant not found' });
+    }
+
+    // If assistant is found, generate a token (you can add more logic for JWT)
+    const token = jwt.sign({ id: assistant._id, phone: assistant.phonenumber }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      assistantName: assistant.name,  // You can include other details here
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+});
+
 
 // Start Server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

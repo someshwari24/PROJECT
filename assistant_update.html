@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Assistant Order Update</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #cce0f5;
+      margin: 0;
+    }
+    header {
+      background-color: #4a63d4;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 15px;
+      font-weight: bold;
+    }
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+    .update-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: calc(100vh - 52px);
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4a63d4;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+    #update-message {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    #preview-area {
+      margin-top: 10px;
+      color: #444;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>Hakuna Assistant</div>
+    <div class="nav-links">
+      <a href="assistant _login.html" id="logout-btn">Logout</a>
+    </div>
+  </header>
+
+  <div class="update-wrapper">
+    <form id="update-form">
+      <label for="orderIdInput">Order ID:</label>
+      <input type="text" id="orderIdInput" placeholder="Enter Order ID" required>
+
+      <label for="cost">Total Cost (₹):</label>
+      <input type="number" id="cost" placeholder="Enter total cost" min="0" step="0.01">
+
+      <label for="trackingSelect">Tracking Method:</label>
+      <select id="trackingSelect">
+        <option value="India Post">India Post</option>
+        <option value="Delhivery">Delhivery</option>
+        <option value="Blue Dart">Blue Dart</option>
+        <option value="other">Other</option>
+      </select>
+
+      <input type="text" id="customTracking" placeholder="Custom tracking method (if any)" style="display: none;">
+
+      <label for="status">Delivery Status:</label>
+      <select id="status" onchange="previewStatus()">
+        <option>Packed</option>
+        <option>Shipped</option>
+        <option>Out for Delivery</option>
+        <option>Delivered</option>
+        <option>Returned</option>
+        <option>Cancelled</option>
+      </select>
+
+      <div id="preview-area"></div>
+
+      <label for="note">Note (optional):</label>
+      <textarea id="note" rows="3" placeholder="Any additional info..."></textarea>
+
+      <button type="submit">Submit Update</button>
+      <div id="update-message"></div>
+    </form>
+  </div>
+
+  <script>
+    // Preview mapped status
+    function previewStatus() {
+      const raw = document.getElementById('status').value;
+      const map = {
+        "Packed": "packed",
+        "Shipped": "shipped",
+        "Out for Delivery": "out_for_delivery",
+        "Delivered": "delivered",
+        "Returned": "returned"
+      };
+      document.getElementById('preview-area').textContent =
+        map[raw] ? `Status selected: ${map[raw]}` : '';
+    }
+
+    // Toggle custom tracking input
+    document.getElementById('trackingSelect').addEventListener('change', () => {
+      const custom = document.getElementById('customTracking');
+      custom.style.display = document.getElementById('trackingSelect').value === 'other' ? 'block' : 'none';
+    });
+
+    // Trigger change on load to apply visibility
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('trackingSelect').dispatchEvent(new Event('change'));
+    });
+
+    // Form submission
+    document.getElementById('update-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const orderId = document.getElementById('orderIdInput').value.trim();
+      const cost = document.getElementById('cost').value;
+      const trackingSel = document.getElementById('trackingSelect').value;
+      const tracking = trackingSel === 'other'
+        ? document.getElementById('customTracking').value.trim()
+        : trackingSel;
+      const raw = document.getElementById('status').value;
+      const map = {
+        "Packed": "packed",
+        "Shipped": "shipped",
+        "Out for Delivery": "out_for_delivery",
+        "Delivered": "delivered",
+        "Returned": "returned"
+      };
+      const status = map[raw];
+      const note = document.getElementById('note').value.trim();
+      const token = localStorage.getItem('assistantToken');
+      const msg = document.getElementById('update-message');
+
+      if (!orderId || !status || (cost && isNaN(cost))) {
+        msg.textContent = 'Please enter all required fields and provide a valid cost.';
+        msg.style.color = 'red';
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3000/assistant_update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ orderId, cost, tracking, status, note })
+        });
+        const data = await res.json();
+        msg.textContent = data.message;
+        msg.style.color = res.ok ? 'green' : 'red';
+        if (res.ok) {
+          document.getElementById('update-form').reset();
+          document.getElementById('customTracking').style.display = 'none';
+          document.getElementById('preview-area').textContent = '';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 5000);
+      } catch (err) {
+        console.error(err);
+        msg.textContent = 'Something went wrong.';
+        msg.style.color = 'red';
+      }
+    });
+
+    // Logout handler
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('assistantToken');
+      window.location.href = 'assistant _login.html';
+    });
+  </script>
+
+</body>
+</html>

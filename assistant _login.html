@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Assistant Login</title>
+  <style>
+    /* Reusing your login style */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Arial', sans-serif; background-color: #a0d2eb; color: #333; }
+    header { position: sticky; top: 0; z-index: 1000; background-color: #5c6bc0; padding: 15px 0; color: white; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+    .header-container { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0px; height: 40px; }
+    .nav-links { display: inline; gap: 20px; font-size: 14px; color: white; }
+    .nav-links a { text-decoration: none; color: white; padding: 10px 15px; border-radius: 4px; transition: background-color 0.3s ease-in-out; }
+    .nav-links a:hover { background-color: #dddee5de; }
+
+    .login-wrapper { display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .login-container { background-color: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); width: 300px; text-align: center; }
+    h2 { margin-bottom: 20px; color: #333; }
+    .form-group { margin-bottom: 15px; text-align: left; width: 100%; }
+    label { display: block; margin-bottom: 5px; color: #555; }
+    input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    button[type="submit"] { width: 100%; padding: 10px; background-color: #5c6bc0; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button[type="submit"]:hover { background-color: #a0d2eb; }
+    .error-message { color: red; font-size: 12px; margin-top: 5px; display: none; }
+    .success-message { color: green; font-size: 14px; margin-top: 10px; }
+    #post-login-options button { margin: 10px; padding: 10px 20px; font-size: 15px; border-radius: 5px; border: none; cursor: pointer; }
+    #post-login-options button:first-child { background-color: #5c6bc0; color: white; }
+    #post-login-options button:last-child { background-color: #4caf50; color: white; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <img src="hakunalogo.jpg" alt="Hakuna Logo">
+      <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="support.html">Support</a>
+        <a href="login.html">User Login</a>
+        <a href="sign up.html">Sign Up</a>
+        <a href="assistant _login.html">Assistant login</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="login-wrapper">
+    <div class="login-container">
+      <h2>Assistant Login</h2>
+      <form id="assistant-login-form">
+        <div class="form-group">
+          <label for="phone">Phone Number:</label>
+          <input type="text" id="phone" name="phone" placeholder="e.g. 9876543210" required>
+          <div id="phone-error" class="error-message">Enter a valid phone number.</div>
+        </div>
+        <button type="submit">Login</button>
+      </form>
+      <div id="login-message" class="success-message"></div>
+
+      <div id="post-login-options" style="display: none;">
+        <button onclick="goToUpdate()">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function goToOrders() {
+      window.location.href = "assistant-orders.html";
+    }
+
+    function goToDelivery() {
+      window.location.href = "delivery-update.html";
+    }
+
+    function goToUpdate() {
+      window.location.href = "assistant_update.html";
+    }
+
+    document.getElementById('assistant-login-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!/^\d{10}$/.test(phone)) {
+        document.getElementById('phone-error').style.display = 'block';
+        return;
+      } else {
+        document.getElementById('phone-error').style.display = 'none';
+      }
+
+      fetch('http://localhost:3000/assistant-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      })
+      .then(response => response.json())
+      .then(data => {
+        const message = document.getElementById('login-message');
+        const options = document.getElementById('post-login-options');
+
+        if (data.message === "Login successful") {
+          message.textContent = "Welcome back! Choose an option:";
+          message.style.color = "green";
+          options.style.display = "block";
+
+          localStorage.setItem('assistantToken', data.token);
+          localStorage.setItem('assistantPhone', phone);
+        } else {
+          message.textContent = data.message;
+          message.style.color = "red";
+          options.style.display = "none";
+        }
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        const message = document.getElementById('login-message');
+        message.textContent = "Server error. Try again later.";
+        message.style.color = "red";
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Terms and Conditions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    .accept-btn {
+      display: block;
+      margin: 30px auto;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      text-align: center;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Terms and Conditions</h1>
+
+  <h2>1. For Users</h2>
+  <p>By using our platform as a user, you agree to the following terms:</p>
+  <ul>
+    <li>You will provide accurate and complete delivery address and contact details.</li>
+    <li>You understand that an assistant will be matched based on your city and state.</li>
+    <li>You agree to communicate respectfully and responsibly with your assigned assistant via WhatsApp.</li>
+    <li>You are responsible for confirming the receipt of your order through the confirmation system.</li>
+    <li>We do not handle payment processing at this time; any payment arrangements are between you and the assistant.</li>
+    <li>You will not misuse the platform or provide false delivery confirmations.</li>
+    <li>Ask the assistant for receipt.</li>
+  </ul>
+
+  <h2>2. For Assistants</h2>
+  <p>By participating as a delivery/shopping assistant, you agree to the following terms:</p>
+  <ul>
+    <li>You will handle each assigned delivery with professionalism and care.</li>
+    <li>You must update the delivery status (Out for Delivery / Delivered / Not Delivered) using the update page provided.</li>
+    <li>You agree to only use WhatsApp to communicate with users in a respectful and helpful manner.</li>
+    <li>You must provide proof of purchase (receipt or bill) to the customer, either by showing it physically or sending it via WhatsApp, to ensure trust and transparency.</li>
+    <li>You will not request or collect payment through unofficial or unsafe channels.</li>
+    <li>You are responsible for ensuring the user receives their products as described.</li>
+    <li>You will not share user data or misuse any personal information you receive.</li>
+    <li>Assistants must show or WhatsApp the receipt to the customer to ensure transparency and trust.</li>
+    <li>The assistant must specify the expected delivery time.</li>
+  </ul>
+
+  <h2>3. General</h2>
+  <ul>
+    <li>We reserve the right to suspend accounts that violate these terms.</li>
+    <li>We may update these terms at any time, and continued use of the platform implies acceptance of any changes.</li>
+    <li>Use of the platform is at your own risk. We are not liable for disputes or losses arising between users and assistants.</li>
+  </ul>
+
+  
+
+  <button class="accept-btn" onclick="goBack()">Accept & Go Back</button>
+
+<script>
+  function goBack() {
+    if (document.referrer) {
+      window.history.back();  // Go back to the previous page if available
+    } else {
+      window.location.href = "home.html";  // Redirect to home or another page if no history
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track Your Order</title>
+  <style>
+    /* Same styles as before */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f7fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #5c6bc0;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .tracking-box {
+      background-color: white;
+      margin-top: 50px;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    input[type="text"] {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #5c6bc0;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3f51b5;
+    }
+
+    .logout-btn {
+      background-color: #e57373;
+      margin-top: 20px;
+    }
+
+    .logout-btn:hover {
+      background-color: #c62828;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Track Your Order</h1>
+  </header>
+
+  <div class="tracking-box">
+    <h2>Enter Your Order ID</h2>
+    <input type="text" id="orderIdInput" placeholder="Paste your order ID here..." />
+    <br/>
+    <button onclick="trackOrder()">Track Order</button>
+    <div id="result"></div>
+    
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    async function trackOrder() {
+      const orderId = document.getElementById("orderIdInput").value.trim();
+      const resultDiv = document.getElementById("result");
+
+      if (!orderId) {
+        resultDiv.innerHTML = `<p style="color:red;">Please enter an Order ID.</p>`;
+        return;
+      }
+
+      const token = localStorage.getItem('token'); // Retrieve the token from localStorage
+
+      if (!token) {
+        resultDiv.innerHTML = `<p style="color:red;">You are not logged in. Please log in first.</p>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3000/track-order/${orderId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+          }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          resultDiv.innerHTML = `
+            <p><strong>Status:</strong> ${data.status}</p>
+            <p><strong>Last Updated:</strong> ${new Date(data.updatedAt).toLocaleString()}</p>
+          `;
+        } else {
+          resultDiv.innerHTML = `<p style="color:red;">${data.message || "Order not found."}</p>`;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<p style="color:red;">Something went wrong while tracking your order. Please try again later.</p>`;
+      }
+    }
+
+    function logout() {
+      // Remove token from localStorage
+      localStorage.removeItem('token');
+      // Redirect to login page
+      window.location.href = 'Login.html';
+    }
+  </script>
+
+</body>
+</html>

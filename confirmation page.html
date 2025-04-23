@@ -7,56 +7,96 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
       background-color: #f4f7fa;
+      margin: 0;
     }
+
     header {
       background-color: #5c6bc0;
       padding: 15px 0;
       color: white;
       text-align: center;
+      position: relative;
     }
+
+    .logout-btn {
+      position: absolute;
+      right: 20px;
+      top: 15px;
+      background: red;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
     .dashboard-container {
-      max-width: 500px;
+      max-width: 700px;
       margin: 40px auto;
       padding: 20px;
       background: white;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
+    .order {
+      background: #f1f1f1;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
     .button {
-      color: white;
-      padding: 10px 20px;
+      padding: 8px 12px;
       border: none;
+      border-radius: 5px;
+      color: white;
+      margin-right: 5px;
+      cursor: pointer;
+    }
+
+    .confirm-btn { background-color: #28a745; }
+    .not-received-btn { background-color: #dc3545; }
+    .problem-btn { background-color: #ffc107; color: black; }
+
+    .filter-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .filter-dropdown {
+      padding: 8px;
       font-size: 16px;
-      cursor: pointer;
       border-radius: 5px;
-      margin: 10px;
+      border: 1px solid #ccc;
     }
-    .confirm-btn {
-      background-color: #28a745;
+
+    h3 {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+      margin-top: 30px;
     }
-    .confirm-btn:hover {
-      background-color: #218838;
+
+    #loading {
+      text-align: center;
+      font-size: 18px;
+      color: #555;
+      display: none;
     }
-    .not-received-btn {
-      background-color: #dc3545;
-    }
-    .not-received-btn:hover {
-      background-color: #c82333;
-    }
-    .logout-btn {
-      background: red;
+
+    .track-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #5c6bc0;
       color: white;
       border: none;
-      padding: 10px;
       border-radius: 5px;
       cursor: pointer;
-      position: absolute;
-      top: 10px;
-      right: 10px;
+    }
+
+    .track-btn:hover {
+      background-color: #3f51b5;
     }
   </style>
 </head>
@@ -67,41 +107,130 @@
     <button class="logout-btn" onclick="logout()">Logout</button>
   </header>
 
-  <div class="dashboard-container">
+  <div class="dashboard-container" id="order-container">
     <p class="welcome-message">Hi <span id="username">User</span>,</p>
-    <p>If you've received your product, please confirm below.</p>
+    <div class="filter-section">
+      <label for="statusFilter">Filter by status:</label>
+      <select id="statusFilter" class="filter-dropdown" onchange="filterOrders()">
+        <option value="all">All Orders</option>
+        <option value="received">Received</option>
+        <option value="not_received">Not Received</option>
+        <option value="problem_with_assistant">Problem with Assistant</option>
+        <option value="pending">Pending</option>
+      </select>
+    </div>
+    <div id="orders-display"></div>
 
-    <button class="button confirm-btn" onclick="submitDelivery(true)">Yes, I’ve received my product</button>
-    <button class="button not-received-btn" onclick="submitDelivery(false)">No, I haven’t received it</button>
+    <!-- Track Order Button -->
+    <button class="track-btn" onclick="goToTrackOrder()">Track Your Order</button>
   </div>
 
+  <div id="loading">Loading...</div>
+
   <script>
+    let allOrders = [];
+
     async function fetchUserInfo() {
       const token = localStorage.getItem("token");
-
       if (!token) {
-        alert("No token found. Please login again.");
+        alert("Please login.");
         window.location.href = "login.html";
         return;
       }
 
+      const res = await fetch("http://localhost:3000/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const user = await res.json();
+        document.getElementById("username").textContent = user.name || "User";
+      } else {
+        alert("Session expired. Login again.");
+        logout();
+      }
+    }
+
+    async function fetchUserOrders() {
+      const token = localStorage.getItem("token");
+      document.getElementById("loading").style.display = "block";
+
       try {
-        const res = await fetch("http://localhost:3000/me", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const res = await fetch("http://localhost:3000/get-user-address", {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!res.ok) throw new Error("Unauthorized");
+        const data = await res.json();
+        allOrders = data;
+        document.getElementById("loading").style.display = "none";
+        filterOrders();
+      } catch (err) {
+        alert("Failed to load orders.");
+        document.getElementById("loading").style.display = "none";
+      }
+    }
+
+    function filterOrders() {
+      const filter = document.getElementById("statusFilter").value;
+      let filteredOrders = allOrders;
+
+      if (filter !== "all") {
+        filteredOrders = allOrders.filter(order =>
+          (filter === "pending") ? !order.status || order.status === "pending" : order.status === filter
+        );
+      }
+
+      renderOrders(filteredOrders);
+    }
+
+    function renderOrders(orders) {
+      const container = document.getElementById("orders-display");
+      container.innerHTML = "";
+
+      if (orders.length === 0) {
+        container.innerHTML = "<p>No orders in this category.</p>";
+        return;
+      }
+
+      orders.forEach(order => {
+        const div = document.createElement("div");
+        div.className = "order";
+        div.innerHTML = `  
+          <p><strong>Item:</strong> ${order.item}</p>
+          <p><strong>Address:</strong> ${order.address}, ${order.city}, ${order.state} - ${order.pincode}</p>
+          <p><strong>Mobile:</strong> ${order.mobile}</p>
+          <p><strong>Date:</strong> ${new Date(order.shoppingDate).toLocaleDateString()}</p>
+          ${order.status === "received" ? 
+            `<p style="color:green;font-weight:bold;">✔ Received</p>` : 
+            `<button class="button confirm-btn" onclick="submitDelivery('received', '${order._id}')">Received</button>
+             <button class="button not-received-btn" onclick="submitDelivery('not_received', '${order._id}')">Not Received</button>
+             <button class="button problem-btn" onclick="submitDelivery('problem_with_assistant', '${order._id}')">Problem with Assistant</button>`}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function submitDelivery(status, orderId) {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch("http://localhost:3000/confirm-delivery", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status, orderId }),
+        });
 
         const data = await res.json();
-        document.getElementById("username").textContent = data.name || "User";
+        if (res.ok) {
+          alert("Status updated!");
+          fetchUserOrders(); // Refresh
+        } else {
+          alert(data.message || "Update failed.");
+        }
       } catch (err) {
-        console.error("Error fetching user info:", err);
-        alert("Session expired. Please login again.");
-        localStorage.clear();
-        window.location.href = "login.html";
+        alert("Error updating status.");
       }
     }
 
@@ -110,42 +239,12 @@
       window.location.href = "login.html";
     }
 
-    async function submitDelivery(confirmed) {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        alert("Please log in again.");
-        return;
-      }
-
-      try {
-        const response = await fetch("http://localhost:3000/confirm-delivery", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ confirmed })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          document.querySelector('.dashboard-container').innerHTML = `
-            <h2>Thank you!</h2>
-            <p>Your response has been recorded.</p>
-          `;
-        } else {
-          alert(data.message || "Something went wrong.");
-        }
-      } catch (err) {
-        console.error("Error confirming delivery:", err);
-        alert("Failed to confirm. Try again later.");
-      }
+    function goToTrackOrder() {
+      window.location.href = "orderUpdates.html"; // Redirects to the Track Order page
     }
 
-    // On page load
     fetchUserInfo();
+    fetchUserOrders();
   </script>
 
 </body>
